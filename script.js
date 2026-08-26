@@ -1,4 +1,6 @@
-const WA = "917500697342";
+from pathlib import Path
+
+script = r'''const WA = "917500697342";
 
 const menu = [
   ["Tea & Coffee","Hot Coffee",89,""],
@@ -81,6 +83,7 @@ const menu = [
   ["Rice & Noodles Veg","Veg Noodles",169,""],
   ["Rice & Noodles Veg","Paneer Noodles",189,""],
 
+  // Half / Full items: price is stored as "half/full".
   ["Tandoori Veg Starter","Malai Soya Chaap","169/249",""],
   ["Tandoori Veg Starter","Hara Bhara Kebab","159/229",""],
   ["Tandoori Veg Starter","Tandoori Paneer Tikka","229/339",""],
@@ -119,13 +122,26 @@ function safeText(value) {
     .replaceAll("'", "&#039;");
 }
 
+function escAttr(value) {
+  return String(value).replaceAll("\\", "\\\\").replaceAll("'", "\\'");
+}
+
+function isHalfFull(price) {
+  return typeof price === "string" && /^\d+\s*\/\s*\d+$/.test(price);
+}
+
+function getHalfFullPrices(price) {
+  const [half, full] = price.split("/").map(v => Number(v.trim()));
+  return { half, full };
+}
+
 function renderChips() {
   const chips = $("chips");
   if (!chips) return;
 
   chips.innerHTML = categories.map(c =>
     `<button class="chip ${c === activeCategory ? "active" : ""}"
-      onclick="setCategory('${c.replaceAll("'", "\\'")}')">${safeText(c)}</button>`
+      onclick="setCategory('${escAttr(c)}')">${safeText(c)}</button>`
   ).join("");
 }
 
@@ -143,6 +159,7 @@ function renderMenu() {
 
   grid.innerHTML = items.map(x => {
     const [cat, name, price, img] = x;
+    const halfFull = isHalfFull(price);
     const addable = typeof price === "number";
 
     const imageHTML = img
@@ -150,24 +167,48 @@ function renderMenu() {
            onerror="this.parentElement.classList.add('image-error');this.remove()">`
       : `<div class="food-img no-image"><span>🍽️</span><small>Photo coming soon</small></div>`;
 
+    let priceHTML = money(price);
+    let buttonHTML = "";
+
+    if (halfFull) {
+      const { half, full } = getHalfFullPrices(price);
+      priceHTML = `₹${half}/₹${full}`;
+
+      // IMPORTANT: Half and Full are now separate order options.
+      buttonHTML = `
+        <div class="size-label">Choose size</div>
+        <div class="size-buttons">
+          <button class="size-btn" onclick="addToCart('${escAttr(name)}','Half',${half})">
+            Half · ₹${half}
+          </button>
+          <button class="size-btn" onclick="addToCart('${escAttr(name)}','Full',${full})">
+            Full · ₹${full}
+          </button>
+        </div>`;
+    } else {
+      buttonHTML = `
+        <button class="add-btn"
+          onclick="${addable
+            ? `addToCart('${escAttr(name)}','',${price})`
+            : `askPrice('${escAttr(name)}')`}">
+          ${addable ? "＋ Add to order" : "Ask price on WhatsApp"}
+        </button>`;
+    }
+
     return `
       <article class="menu-card">
         ${imageHTML}
         <div class="menu-info">
           <div class="menu-top">
             <div class="menu-name">${safeText(name)}</div>
-            <div class="price">${money(price)}</div>
+            <div class="price">${priceHTML}</div>
           </div>
-          <div class="cat">${safeText(cat)}${cat.includes("Tandoori") && typeof price === "string" ? " • Half / Full" : ""}</div>
-          <button class="add-btn"
-            onclick="${addable
-              ? `addToCart('${name.replaceAll("'", "\\'")}',${price})`
-              : `askPrice('${name.replaceAll("'", "\\'")}')`}">
-            ${addable ? "＋ Add to order" : "Ask price on WhatsApp"}
-          </button>
+          <div class="cat">${safeText(cat)}${halfFull ? " • Half / Full" : ""}</div>
+          ${buttonHTML}
         </div>
       </article>`;
-  }).join("") || `<div style="grid-column:1/-1;padding:40px 0">No matching items found.</div>`;
+  }).join("") ||
+    `<div style="grid-column:1/-1;padding:40px 0">No matching items found.</div>`;
 }
 
 function setCategory(c) {
@@ -176,17 +217,33 @@ function setCategory(c) {
   renderMenu();
 }
 
-function addToCart(name, price) {
-  if (!cart[name]) cart[name] = { price, qty: 0 };
-  cart[name].qty++;
+function cartKey(name, size) {
+  return `${name}__${size || "single"}`;
+}
+
+function addToCart(name, size, price) {
+  const key = cartKey(name, size);
+
+  if (!cart[key]) {
+    cart[key] = {
+      name,
+      size: size || "",
+      price: Number(price),
+      qty: 0
+    };
+  }
+
+  cart[key].qty++;
   renderCart();
   toggleCart(true);
 }
 
-function changeQty(name, delta) {
-  if (!cart[name]) return;
-  cart[name].qty += delta;
-  if (cart[name].qty <= 0) delete cart[name];
+function changeQty(key, delta) {
+  if (!cart[key]) return;
+
+  cart[key].qty += delta;
+  if (cart[key].qty <= 0) delete cart[key];
+
   renderCart();
 }
 
@@ -195,22 +252,29 @@ function renderCart() {
   const count = entries.reduce((s, [, v]) => s + v.qty, 0);
   const total = entries.reduce((s, [, v]) => s + v.qty * v.price, 0);
 
-  if ($("cartCount")) $("cartCount").textContent = `${count} item${count === 1 ? "" : "s"}`;
-  if ($("floatingCount")) $("floatingCount").textContent = count;
-  if ($("cartTotal")) $("cartTotal").textContent = "₹" + total;
+  if ($("cartCount"))
+    $("cartCount").textContent = `${count} item${count === 1 ? "" : "s"}`;
+
+  if ($("floatingCount"))
+    $("floatingCount").textContent = count;
+
+  if ($("cartTotal"))
+    $("cartTotal").textContent = "₹" + total;
 
   if ($("cartItems")) {
     $("cartItems").innerHTML = entries.length
-      ? entries.map(([name, v]) => `
+      ? entries.map(([key, v]) => `
           <div class="cart-row">
             <div class="cart-row-main">
-              <div class="cart-row-name">${safeText(name)}</div>
+              <div class="cart-row-name">
+                ${safeText(v.name)}${v.size ? ` <small>(${safeText(v.size)})</small>` : ""}
+              </div>
               <div class="cart-row-price">₹${v.price} each</div>
             </div>
             <div class="qty">
-              <button onclick="changeQty('${name.replaceAll("'", "\\'")}',-1)">−</button>
+              <button onclick="changeQty('${escAttr(key)}',-1)">−</button>
               <b>${v.qty}</b>
-              <button onclick="changeQty('${name.replaceAll("'", "\\'")}',1)">+</button>
+              <button onclick="changeQty('${escAttr(key)}',1)">+</button>
             </div>
           </div>`).join("")
       : `<div class="empty-cart">Your cart is empty.<br><span>Add something delicious.</span></div>`;
@@ -233,22 +297,28 @@ function bookGame(game) {
 }
 
 function sendOrder() {
-  const entries = Object.entries(cart);
+  const entries = Object.values(cart);
+
   if (!entries.length) {
     alert("Please add at least one item to your order.");
     return;
   }
 
-  const lines = entries.map(([name, v]) => `• ${name} × ${v.qty} = ₹${v.qty * v.price}`);
-  const total = entries.reduce((s, [, v]) => s + v.qty * v.price, 0);
+  const lines = entries.map(v => {
+    const sizeText = v.size ? ` (${v.size})` : "";
+    return `• ${v.name}${sizeText} × ${v.qty} = ₹${v.qty * v.price}`;
+  });
+
+  const total = entries.reduce((s, v) => s + v.qty * v.price, 0);
 
   const text =
-    `Hi Arcade Appetite!%0A%0AI'd like to order:%0A` +
-    `${encodeURIComponent(lines.join("\n"))}` +
-    `%0A%0AEstimated subtotal: ₹${total}` +
-    `%0A%0APlease confirm availability, final total and pickup/delivery details.`;
+    `Hi Arcade Appetite!\\n\\n` +
+    `I'd like to order:\\n` +
+    `${lines.join("\\n")}` +
+    `\\n\\nEstimated subtotal: ₹${total}` +
+    `\\n\\nPlease confirm availability, final total and pickup/delivery details.`;
 
-  window.open(`https://wa.me/${WA}?text=${text}`, "_blank");
+  window.open(`https://wa.me/${WA}?text=${encodeURIComponent(text)}`, "_blank");
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -258,3 +328,8 @@ document.addEventListener("DOMContentLoaded", () => {
   renderMenu();
   renderCart();
 });
+'''
+
+out = Path("/mnt/data/arcade-appetite-script-fixed.js")
+out.write_text(script, encoding="utf-8")
+print(f"Created: {out}")
