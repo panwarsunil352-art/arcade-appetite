@@ -1,6 +1,4 @@
-from pathlib import Path
-
-script = r'''const WA = "917500697342";
+const WA = "917500697342";
 
 const menu = [
   ["Tea & Coffee","Hot Coffee",89,""],
@@ -83,7 +81,7 @@ const menu = [
   ["Rice & Noodles Veg","Veg Noodles",169,""],
   ["Rice & Noodles Veg","Paneer Noodles",189,""],
 
-  // Half / Full items: price is stored as "half/full".
+  /* HALF / FULL VEG */
   ["Tandoori Veg Starter","Malai Soya Chaap","169/249",""],
   ["Tandoori Veg Starter","Hara Bhara Kebab","159/229",""],
   ["Tandoori Veg Starter","Tandoori Paneer Tikka","229/339",""],
@@ -93,6 +91,7 @@ const menu = [
   ["Tandoori Veg Starter","Tandoori Mushroom","239/349",""],
   ["Tandoori Veg Starter","Paneer Hariyali Tikka","229/339",""],
 
+  /* HALF / FULL NON-VEG */
   ["Tandoori Non-Veg Starter","Tandoori Chicken","249/449",""],
   ["Tandoori Non-Veg Starter","Afghani Chicken","269/459",""],
   ["Tandoori Non-Veg Starter","Chicken Achari Tikka","279/399",""],
@@ -104,13 +103,20 @@ const menu = [
 ];
 
 const categories = ["All", ...new Set(menu.map(x => x[0]))];
+
 let activeCategory = "All";
 let cart = {};
 
 const $ = id => document.getElementById(id);
 
-function money(p) {
-  return p == null ? "Ask" : `₹${p}`;
+
+/* =========================
+   BASIC HELPERS
+========================= */
+
+function money(price) {
+  if (price == null) return "Ask";
+  return `₹${price}`;
 }
 
 function safeText(value) {
@@ -123,213 +129,588 @@ function safeText(value) {
 }
 
 function escAttr(value) {
-  return String(value).replaceAll("\\", "\\\\").replaceAll("'", "\\'");
+  return String(value)
+    .replaceAll("\\", "\\\\")
+    .replaceAll("'", "\\'");
 }
 
+
+/* =========================
+   HALF / FULL
+========================= */
+
 function isHalfFull(price) {
-  return typeof price === "string" && /^\d+\s*\/\s*\d+$/.test(price);
+  return (
+    typeof price === "string" &&
+    /^\d+\s*\/\s*\d+$/.test(price)
+  );
 }
 
 function getHalfFullPrices(price) {
-  const [half, full] = price.split("/").map(v => Number(v.trim()));
-  return { half, full };
+  const parts = price.split("/");
+
+  return {
+    half: Number(parts[0].trim()),
+    full: Number(parts[1].trim())
+  };
 }
+
+
+/* =========================
+   CATEGORY BUTTONS
+========================= */
 
 function renderChips() {
   const chips = $("chips");
+
   if (!chips) return;
 
-  chips.innerHTML = categories.map(c =>
-    `<button class="chip ${c === activeCategory ? "active" : ""}"
-      onclick="setCategory('${escAttr(c)}')">${safeText(c)}</button>`
-  ).join("");
+  chips.innerHTML = categories
+    .map(category => `
+      <button
+        class="chip ${category === activeCategory ? "active" : ""}"
+        onclick="setCategory('${escAttr(category)}')">
+        ${safeText(category)}
+      </button>
+    `)
+    .join("");
 }
+
+
+/* =========================
+   MENU
+========================= */
 
 function renderMenu() {
   const search = $("menuSearch");
   const grid = $("menuGrid");
+
   if (!grid) return;
 
-  const q = search ? search.value.toLowerCase().trim() : "";
+  const query = search
+    ? search.value.toLowerCase().trim()
+    : "";
 
-  const items = menu.filter(x =>
-    (activeCategory === "All" || x[0] === activeCategory) &&
-    (!q || x[1].toLowerCase().includes(q) || x[0].toLowerCase().includes(q))
-  );
+  const items = menu.filter(item => {
+    const category = item[0];
+    const name = item[1];
 
-  grid.innerHTML = items.map(x => {
-    const [cat, name, price, img] = x;
-    const halfFull = isHalfFull(price);
-    const addable = typeof price === "number";
+    const categoryMatch =
+      activeCategory === "All" ||
+      category === activeCategory;
 
-    const imageHTML = img
-      ? `<img class="food-img" loading="lazy" src="${img}" alt="${safeText(name)}"
-           onerror="this.parentElement.classList.add('image-error');this.remove()">`
-      : `<div class="food-img no-image"><span>🍽️</span><small>Photo coming soon</small></div>`;
+    const searchMatch =
+      !query ||
+      name.toLowerCase().includes(query) ||
+      category.toLowerCase().includes(query);
 
-    let priceHTML = money(price);
-    let buttonHTML = "";
+    return categoryMatch && searchMatch;
+  });
 
-    if (halfFull) {
-      const { half, full } = getHalfFullPrices(price);
-      priceHTML = `₹${half}/₹${full}`;
+  grid.innerHTML =
+    items.map(item => {
 
-      // IMPORTANT: Half and Full are now separate order options.
-      buttonHTML = `
-        <div class="size-label">Choose size</div>
-        <div class="size-buttons">
-          <button class="size-btn" onclick="addToCart('${escAttr(name)}','Half',${half})">
-            Half · ₹${half}
-          </button>
-          <button class="size-btn" onclick="addToCart('${escAttr(name)}','Full',${full})">
-            Full · ₹${full}
-          </button>
-        </div>`;
-    } else {
-      buttonHTML = `
-        <button class="add-btn"
-          onclick="${addable
-            ? `addToCart('${escAttr(name)}','',${price})`
-            : `askPrice('${escAttr(name)}')`}">
-          ${addable ? "＋ Add to order" : "Ask price on WhatsApp"}
-        </button>`;
-    }
+      const [category, name, price, image] = item;
 
-    return `
-      <article class="menu-card">
-        ${imageHTML}
-        <div class="menu-info">
-          <div class="menu-top">
-            <div class="menu-name">${safeText(name)}</div>
-            <div class="price">${priceHTML}</div>
+      const halfFull = isHalfFull(price);
+      const addable = typeof price === "number";
+
+      let imageHTML = "";
+
+      if (image) {
+
+        imageHTML = `
+          <img
+            class="food-img"
+            loading="lazy"
+            src="${image}"
+            alt="${safeText(name)}"
+            onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
+          >
+
+          <div class="food-img no-image" style="display:none;">
+            <span>🍽️</span>
+            <small>Photo coming soon</small>
           </div>
-          <div class="cat">${safeText(cat)}${halfFull ? " • Half / Full" : ""}</div>
-          ${buttonHTML}
-        </div>
-      </article>`;
-  }).join("") ||
-    `<div style="grid-column:1/-1;padding:40px 0">No matching items found.</div>`;
+        `;
+
+      } else {
+
+        imageHTML = `
+          <div class="food-img no-image">
+            <span>🍽️</span>
+            <small>Photo coming soon</small>
+          </div>
+        `;
+      }
+
+
+      /* =========================
+         HALF / FULL ITEM
+      ========================= */
+
+      if (halfFull) {
+
+        const { half, full } =
+          getHalfFullPrices(price);
+
+        return `
+          <article class="menu-card">
+
+            ${imageHTML}
+
+            <div class="menu-info">
+
+              <div class="menu-top">
+
+                <div class="menu-name">
+                  ${safeText(name)}
+                </div>
+
+                <div class="price">
+                  ₹${half}/₹${full}
+                </div>
+
+              </div>
+
+              <div class="cat">
+                ${safeText(category)} • Half / Full
+              </div>
+
+              <div class="size-label">
+                Choose size
+              </div>
+
+              <div class="size-buttons">
+
+                <button
+                  class="size-btn"
+                  onclick="addToCart('${escAttr(name)}','Half',${half})">
+
+                  Half · ₹${half}
+
+                </button>
+
+                <button
+                  class="size-btn"
+                  onclick="addToCart('${escAttr(name)}','Full',${full})">
+
+                  Full · ₹${full}
+
+                </button>
+
+              </div>
+
+            </div>
+
+          </article>
+        `;
+
+      }
+
+
+      /* =========================
+         NORMAL ITEM
+      ========================= */
+
+      return `
+        <article class="menu-card">
+
+          ${imageHTML}
+
+          <div class="menu-info">
+
+            <div class="menu-top">
+
+              <div class="menu-name">
+                ${safeText(name)}
+              </div>
+
+              <div class="price">
+                ${money(price)}
+              </div>
+
+            </div>
+
+            <div class="cat">
+              ${safeText(category)}
+            </div>
+
+            <button
+              class="add-btn"
+              onclick="${
+                addable
+                  ? `addToCart('${escAttr(name)}','',${price})`
+                  : `askPrice('${escAttr(name)}')`
+              }">
+
+              ${
+                addable
+                  ? "＋ Add to order"
+                  : "Ask price on WhatsApp"
+              }
+
+            </button>
+
+          </div>
+
+        </article>
+      `;
+
+    }).join("") ||
+
+    `
+      <div
+        style="
+          grid-column:1/-1;
+          padding:40px 0;
+          text-align:center;
+        ">
+
+        No matching items found.
+
+      </div>
+    `;
 }
 
-function setCategory(c) {
-  activeCategory = c;
+
+/* =========================
+   CATEGORY SELECT
+========================= */
+
+function setCategory(category) {
+
+  activeCategory = category;
+
   renderChips();
   renderMenu();
+
 }
+
+
+/* =========================
+   CART KEY
+========================= */
 
 function cartKey(name, size) {
+
   return `${name}__${size || "single"}`;
+
 }
 
+
+/* =========================
+   ADD TO CART
+========================= */
+
 function addToCart(name, size, price) {
+
   const key = cartKey(name, size);
 
   if (!cart[key]) {
+
     cart[key] = {
-      name,
+      name: name,
       size: size || "",
       price: Number(price),
       qty: 0
     };
+
   }
 
   cart[key].qty++;
+
   renderCart();
+
   toggleCart(true);
+
 }
 
+
+/* =========================
+   CHANGE QUANTITY
+========================= */
+
 function changeQty(key, delta) {
+
   if (!cart[key]) return;
 
   cart[key].qty += delta;
-  if (cart[key].qty <= 0) delete cart[key];
+
+  if (cart[key].qty <= 0) {
+
+    delete cart[key];
+
+  }
 
   renderCart();
+
 }
+
+
+/* =========================
+   RENDER CART
+========================= */
 
 function renderCart() {
+
   const entries = Object.entries(cart);
-  const count = entries.reduce((s, [, v]) => s + v.qty, 0);
-  const total = entries.reduce((s, [, v]) => s + v.qty * v.price, 0);
 
-  if ($("cartCount"))
-    $("cartCount").textContent = `${count} item${count === 1 ? "" : "s"}`;
+  const count =
+    entries.reduce(
+      (sum, [, item]) =>
+        sum + item.qty,
+      0
+    );
 
-  if ($("floatingCount"))
-    $("floatingCount").textContent = count;
+  const total =
+    entries.reduce(
+      (sum, [, item]) =>
+        sum + item.qty * item.price,
+      0
+    );
 
-  if ($("cartTotal"))
-    $("cartTotal").textContent = "₹" + total;
+
+  if ($("cartCount")) {
+
+    $("cartCount").textContent =
+      `${count} item${count === 1 ? "" : "s"}`;
+
+  }
+
+
+  if ($("floatingCount")) {
+
+    $("floatingCount").textContent =
+      count;
+
+  }
+
+
+  if ($("cartTotal")) {
+
+    $("cartTotal").textContent =
+      "₹" + total;
+
+  }
+
 
   if ($("cartItems")) {
-    $("cartItems").innerHTML = entries.length
-      ? entries.map(([key, v]) => `
-          <div class="cart-row">
-            <div class="cart-row-main">
-              <div class="cart-row-name">
-                ${safeText(v.name)}${v.size ? ` <small>(${safeText(v.size)})</small>` : ""}
-              </div>
-              <div class="cart-row-price">₹${v.price} each</div>
+
+    $("cartItems").innerHTML =
+      entries.length
+
+      ?
+
+      entries.map(([key, item]) => `
+
+        <div class="cart-row">
+
+          <div class="cart-row-main">
+
+            <div class="cart-row-name">
+
+              ${safeText(item.name)}
+
+              ${
+                item.size
+                  ? `<small>(${safeText(item.size)})</small>`
+                  : ""
+              }
+
             </div>
-            <div class="qty">
-              <button onclick="changeQty('${escAttr(key)}',-1)">−</button>
-              <b>${v.qty}</b>
-              <button onclick="changeQty('${escAttr(key)}',1)">+</button>
+
+            <div class="cart-row-price">
+
+              ₹${item.price} each
+
             </div>
-          </div>`).join("")
-      : `<div class="empty-cart">Your cart is empty.<br><span>Add something delicious.</span></div>`;
+
+          </div>
+
+
+          <div class="qty">
+
+            <button
+              onclick="changeQty('${escAttr(key)}',-1)">
+              −
+            </button>
+
+            <b>${item.qty}</b>
+
+            <button
+              onclick="changeQty('${escAttr(key)}',1)">
+              +
+            </button>
+
+          </div>
+
+        </div>
+
+      `).join("")
+
+      :
+
+      `
+        <div class="empty-cart">
+
+          Your cart is empty.
+
+          <br>
+
+          <span>
+            Add something delicious.
+          </span>
+
+        </div>
+      `;
+
   }
+
 }
+
+
+/* =========================
+   OPEN / CLOSE CART
+========================= */
 
 function toggleCart(open) {
-  if ($("cart")) $("cart").classList.toggle("open", open);
-  if ($("cartBackdrop")) $("cartBackdrop").classList.toggle("open", open);
-}
 
-function askPrice(name) {
-  const text = `Hi Arcade Appetite, please tell me the current price and availability of ${name}.`;
-  window.open(`https://wa.me/${WA}?text=${encodeURIComponent(text)}`, "_blank");
-}
+  if ($("cart")) {
 
-function bookGame(game) {
-  const text = `Hi Arcade Appetite, I want to enquire about ${game}. Please tell me availability and the applicable current offer price.`;
-  window.open(`https://wa.me/${WA}?text=${encodeURIComponent(text)}`, "_blank");
-}
+    $("cart").classList.toggle(
+      "open",
+      open
+    );
 
-function sendOrder() {
-  const entries = Object.values(cart);
-
-  if (!entries.length) {
-    alert("Please add at least one item to your order.");
-    return;
   }
 
-  const lines = entries.map(v => {
-    const sizeText = v.size ? ` (${v.size})` : "";
-    return `• ${v.name}${sizeText} × ${v.qty} = ₹${v.qty * v.price}`;
-  });
+  if ($("cartBackdrop")) {
 
-  const total = entries.reduce((s, v) => s + v.qty * v.price, 0);
+    $("cartBackdrop").classList.toggle(
+      "open",
+      open
+    );
 
-  const text =
-    `Hi Arcade Appetite!\\n\\n` +
-    `I'd like to order:\\n` +
-    `${lines.join("\\n")}` +
-    `\\n\\nEstimated subtotal: ₹${total}` +
-    `\\n\\nPlease confirm availability, final total and pickup/delivery details.`;
+  }
 
-  window.open(`https://wa.me/${WA}?text=${encodeURIComponent(text)}`, "_blank");
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  if ($("menuSearch")) $("menuSearch").addEventListener("input", renderMenu);
 
-  renderChips();
-  renderMenu();
-  renderCart();
-});
-'''
+/* =========================
+   WHATSAPP PRICE
+========================= */
 
-out = Path("/mnt/data/arcade-appetite-script-fixed.js")
-out.write_text(script, encoding="utf-8")
-print(f"Created: {out}")
+function askPrice(name) {
+
+  const text =
+    `Hi Arcade Appetite, please tell me the current price and availability of ${name}.`;
+
+  window.open(
+    `https://wa.me/${WA}?text=${encodeURIComponent(text)}`,
+    "_blank"
+  );
+
+}
+
+
+/* =========================
+   GAME BOOKING
+========================= */
+
+function bookGame(game) {
+
+  const text =
+    `Hi Arcade Appetite, I want to enquire about ${game}. Please tell me availability and the applicable current offer price.`;
+
+  window.open(
+    `https://wa.me/${WA}?text=${encodeURIComponent(text)}`,
+    "_blank"
+  );
+
+}
+
+
+/* =========================
+   SEND ORDER TO WHATSAPP
+========================= */
+
+function sendOrder() {
+
+  const entries =
+    Object.values(cart);
+
+  if (!entries.length) {
+
+    alert(
+      "Please add at least one item to your order."
+    );
+
+    return;
+
+  }
+
+
+  const lines =
+    entries.map(item => {
+
+      const sizeText =
+        item.size
+          ? ` (${item.size})`
+          : "";
+
+      return (
+        `• ${item.name}${sizeText} × ${item.qty} = ₹${item.qty * item.price}`
+      );
+
+    });
+
+
+  const total =
+    entries.reduce(
+      (sum, item) =>
+        sum + item.qty * item.price,
+      0
+    );
+
+
+  const text =
+    `Hi Arcade Appetite!\n\n` +
+    `I'd like to order:\n` +
+    `${lines.join("\n")}` +
+    `\n\nEstimated subtotal: ₹${total}` +
+    `\n\nPlease confirm availability, final total and pickup/delivery details.`;
+
+
+  window.open(
+    `https://wa.me/${WA}?text=${encodeURIComponent(text)}`,
+    "_blank"
+  );
+
+}
+
+
+/* =========================
+   PAGE LOAD
+========================= */
+
+document.addEventListener(
+  "DOMContentLoaded",
+  () => {
+
+    if ($("menuSearch")) {
+
+      $("menuSearch")
+        .addEventListener(
+          "input",
+          renderMenu
+        );
+
+    }
+
+    renderChips();
+    renderMenu();
+    renderCart();
+
+  }
+);
