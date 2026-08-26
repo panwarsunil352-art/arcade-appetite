@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Arcade Appetite | Games, Food & Good Times in Dehradun</title>
+  <meta name="description" content="Arcade Appetite on UPES Road, Bidholi, Dehradun — games, food, drinks, party bookings and WhatsApp ordering. Open 11 AM–11 PM.">
+  <meta name="theme-color" content="#11131a">
+  <meta property="og:title" content="Arcade Appetite | Games + Food + Good Times">
+  <meta property="og:description" content="Play. Eat. Chill. Order online or plan your visit to Arcade Appetite, UPES Road, Bidholi, Dehradun.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="assets/logo.jpeg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="#home" aria-label="Arcade Appetite home">
+    <img src="assets/logo.jpeg" alt="Arcade Appetite logo">
+    <span>ARCADE<br><small>APPETITE</small></span>
+  </a>
+  <nav class="nav">
+    <a href="#games">Games</a>
+    <a href="#menu">Menu</a>
+    <a href="#offers">Offers</a>
+    <a href="#party">Parties</a>
+    <a href="#visit">Visit</a>
+  </nav>
+  <a class="nav-cta" href="tel:+917500697342">Call Now</a>
+</header>
+
+<main id="home">
+  <section class="hero">
+    <div class="hero-glow glow-a"></div><div class="hero-glow glow-b"></div>
+    <div class="hero-copy">
+      <div class="eyebrow">UPES ROAD • BIDHOLI • DEHRADUN</div>
+      <h1>PLAY.<br><span>EAT.</span><br>REPEAT.</h1>
+      <p class="hero-text">Your hangout for games, food, drinks, friends and good times — all under one roof.</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="#menu">Explore Menu <span>↗</span></a>
+        <a class="btn btn-ghost" href="https://wa.me/917500697342?text=Hi%20Arcade%20Appetite%2C%20I%20want%20to%20visit." target="_blank" rel="noopener">WhatsApp Us</a>
+      </div>
+      <div class="hero-meta">
+        <span>⏰ 11 AM – 11 PM</span>
+        <span>🎮 Games + Food</span>
+        <span>🎉 Party Bookings</span>
+      </div>
+    </div>
+    <div class="hero-card">
+      <div class="offer-pill">LIMITED-TIME OFFER</div>
+      <div class="offer-big">50%<small>OFF</small></div>
+      <p>ON GAMES</p>
+      <a href="#games" class="offer-link">See game prices →</a>
+    </div>
+  </section>
+
+  <section class="trust-strip">
+    <div><b>11 AM–11 PM</b><span>Open daily</span></div>
+    <div><b>₹49+</b><span>Food & drinks start</span></div>
+    <div><b>₹100+</b><span>Games available</span></div>
+    <div><b>FREE</b><span>Carrom & Ludo</span></div>
+  </section>
+
+  <section class="section intro" id="games">
+    <div class="section-head">
+      <div><span class="kicker">THE FUN ZONE</span><h2>Choose your game.</h2></div>
+      <p>Pick your game, then message us on WhatsApp to confirm availability and the final offer price.</p>
+    </div>
+    <div class="game-grid">
+      <article class="game-card featured">
+        <div class="game-icon">🏓</div><div><h3>Table Tennis</h3><p>₹100 <span>listed price</span></p></div>
+        <button class="mini-btn" onclick="bookGame('Table Tennis')">Book / Enquire</button>
+      </article>
+      <article class="game-card">
+        <div class="game-icon">🎱</div><div><h3>Snooker</h3><p>₹150 <span>30 min</span> · ₹250 <span>1 hour</span></p></div>
+        <button class="mini-btn" onclick="bookGame('Snooker')">Book / Enquire</button>
+      </article>
+      <article class="game-card">
+        <div class="game-icon">🎱</div><div><h3>Pool Table</h3><p>₹120 <span>30 min</span> · ₹200 <span>1 hour</span></p></div>
+        <button class="mini-btn" onclick="bookGame('Pool Table')">Book / Enquire</button>
+      </article>
+      <article class="game-card free">
+        <div class="game-icon">🃏</div><div><h3>Carrom</h3><p>FREE</p></div>
+        <button class="mini-btn" onclick="bookGame('Carrom')">Enquire</button>
+      </article>
+      <article class="game-card free">
+        <div class="game-icon">🎲</div><div><h3>Ludo</h3><p>FREE</p></div>
+        <button class="mini-btn" onclick="bookGame('Ludo')">Enquire</button>
+      </article>
+    </div>
+    <div class="notice">🔥 <b>50% OFF on games</b> — current offer shared by the cafe. Please confirm the applicable price and availability on WhatsApp before your visit.</div>
+  </section>
+
+  <section class="section menu-section" id="menu">
+    <div class="section-head">
+      <div><span class="kicker">FOOD & DRINKS</span><h2>What are you craving?</h2></div>
+      <p>Browse the menu, add items to your cart and send your order/enquiry straight to WhatsApp.</p>
+    </div>
+    <div class="menu-toolbar">
+      <div class="chips" id="chips"></div>
+      <input id="menuSearch" class="search" type="search" placeholder="Search food, coffee, noodles..." aria-label="Search menu">
+    </div>
+    <div id="menuGrid" class="menu-grid"></div>
+    <div class="menu-note">Menu prices are based on the menu image you supplied. For the item where a price was not visible, the website shows “Ask”. Images are visual references and actual presentation may vary.</div>
+  </section>
+
+  <section class="section offers" id="offers">
+    <div class="section-head">
+      <div><span class="kicker">OFFERS & EXPERIENCES</span><h2>More reasons to come.</h2></div>
+    </div>
+    <div class="offer-grid">
+      <article class="offer-card hot"><span>01</span><h3>50% OFF Games</h3><p>Make your game session more exciting with the current games offer. Confirm the applicable final price with us.</p><a href="#games">View games →</a></article>
+      <article class="offer-card"><span>02</span><h3>Monthly Game Offers</h3><p>Ask us about the current monthly game offer for students and regular players.</p><a href="https://wa.me/917500697342?text=Hi%20Arcade%20Appetite%2C%20please%20tell%20me%20about%20your%20current%20monthly%20game%20offer." target="_blank" rel="noopener">Ask on WhatsApp →</a></article>
+      <article class="offer-card"><span>03</span><h3>Birthday & Party</h3><p>Planning a birthday or group party? Buffet and DJ options are available. Message us to discuss your requirements.</p><a href="#party">Plan a party →</a></article>
+    </div>
+  </section>
+
+  <section class="section party" id="party">
+    <div class="party-panel">
+      <div>
+        <span class="kicker">MAKE IT A NIGHT</span>
+        <h2>Birthday? Party? Game night?</h2>
+        <p>Tell us your date, group size and what you have in mind. We’ll help you plan around food, games, buffet and DJ options.</p>
+      </div>
+      <a class="btn btn-primary" href="https://wa.me/917500697342?text=Hi%20Arcade%20Appetite%2C%20I%27d%20like%20to%20plan%20a%20party.%20Date%3A%20%20Guests%3A%20%20Requirements%3A%20" target="_blank" rel="noopener">Plan My Party</a>
+    </div>
+  </section>
+
+  <section class="section visit" id="visit">
+    <div class="visit-card">
+      <div class="visit-copy">
+        <span class="kicker">COME HANG OUT</span>
+        <h2>Find Arcade Appetite.</h2>
+        <p><b>Arcade Appetite</b><br>UPES Road, near The Watering Hole Wine Shop,<br>Bidholi, Dehradun, Uttarakhand 248007</p>
+        <div class="visit-details"><span>⏰ 11 AM – 11 PM</span><span>📞 7500697342</span><span>📅 No weekly off</span></div>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="https://www.google.com/maps/search/?api=1&query=Arcade%20Appetite%2C%20UPES%20Road%2C%20Bidholi%2C%20Dehradun%2C%20Uttarakhand%20248007" target="_blank" rel="noopener">Open in Google Maps</a>
+          <a class="btn btn-ghost" href="tel:+917500697342">Call 7500697342</a>
+        </div>
+      </div>
+      <div class="map-box">
+        <div class="map-pin">📍</div>
+        <h3>UPES Road • Bidholi</h3>
+        <p>Near The Watering Hole Wine Shop</p>
+        <a href="https://www.google.com/maps/search/?api=1&query=Arcade%20Appetite%2C%20UPES%20Road%2C%20Bidholi%2C%20Dehradun%2C%20Uttarakhand%20248007" target="_blank" rel="noopener">Get directions ↗</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<aside class="cart" id="cart">
+  <div class="cart-head"><div><b>Your order</b><span id="cartCount">0 items</span></div><button onclick="toggleCart(false)" aria-label="Close cart">×</button></div>
+  <div id="cartItems" class="cart-items"><div class="empty-cart">Your cart is empty.<br><span>Add something delicious.</span></div></div>
+  <div class="cart-bottom">
+    <div class="cart-total"><span>Subtotal</span><b id="cartTotal">₹0</b></div>
+    <button class="btn btn-primary full" onclick="sendOrder()">Send order on WhatsApp</button>
+    <small>Order details are sent to 7500697342. Please confirm availability and final total with the cafe.</small>
+  </div>
+</aside>
+<div class="cart-backdrop" id="cartBackdrop" onclick="toggleCart(false)"></div>
+<button class="floating-cart" onclick="toggleCart(true)" aria-label="Open cart">🛒 <span id="floatingCount">0</span></button>
+<a class="floating-wa" href="https://wa.me/917500697342?text=Hi%20Arcade%20Appetite%2C%20I%20have%20a%20query." target="_blank" rel="noopener" aria-label="WhatsApp Arcade Appetite">◉</a>
+
+<footer>
+  <div class="footer-brand"><img src="assets/logo.jpeg" alt=""><div><b>ARCADE APPETITE</b><span>Games • Food • Good Times</span></div></div>
+  <div class="footer-links"><a href="#menu">Menu</a><a href="#games">Games</a><a href="#offers">Offers</a><a href="#visit">Location</a></div>
+  <div class="footer-contact"><a href="tel:+917500697342">7500697342</a><span>11 AM – 11 PM • No weekly off</span></div>
+  <div class="footer-bottom">© 2026 Arcade Appetite. All rights reserved. <span>Menu prices may change; please confirm current availability/pricing before ordering.</span></div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
